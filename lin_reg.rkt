@@ -11,6 +11,8 @@
 (define plot-frame-width 500)
 (define plot-frame-height 500)
 
+(define inc 60)
+
 (define (scale-var var factor)
   (* var factor)
   )
@@ -51,9 +53,9 @@
 (define final-data (convert-list td))
 
 (define (sum lst)
-      (cond
-        [(empty? lst) 0]
-        [else (+ (first lst) (sum (rest lst)))]))
+  (cond
+    [(empty? lst) 0]
+    [else (+ (first lst) (sum (rest lst)))]))
 
 (define (mean lst)
   (/ (sum lst) (length lst))
@@ -69,8 +71,8 @@
     [else (embed-circle 
            (first lst)
            (embed-engine (rest lst)))]
-   )
- )
+    )
+  )
 
 ;;-----------------------------------------------------------------;;
 
@@ -81,14 +83,14 @@
 (define Y-mean (mean Y-vec))
 
 (define covariance-xy (/ (sum (map (lambda
-         (l)
-       (*(-(Point-x l) (mean X-vec)) (-(Point-y l) (mean Y-vec)))
-       ) final-data)) (- N 1)))
+                                       (l)
+                                     (*(-(Point-x l) (mean X-vec)) (-(Point-y l) (mean Y-vec)))
+                                     ) final-data)) (- N 1)))
 
 (define variance-x (/ (sum (map (lambda
-         (l)
-       (*(-(Point-x l) (mean X-vec)) (-(Point-x l) (mean X-vec)))
-       ) final-data)) (- N 1)))
+                                    (l)
+                                  (*(-(Point-x l) (mean X-vec)) (-(Point-x l) (mean X-vec)))
+                                  ) final-data)) (- N 1)))
 
 (define (f-of-x n)
   (+ Alpha (* Beta n)))
@@ -99,33 +101,50 @@
   (make-Point 
    (* scaling-x 0) 
    (* scaling-y 
-    (f-of-x 0))
+      (f-of-x 0))
    ))
 
 (define line-end 
   (make-Point 
    (* scaling-x 25) 
    (* scaling-y 
-    (f-of-x 25))
+      (f-of-x 25))
    ))
 
-(define render-graph (flip-vertical
-(add-line 
- (embed-engine final-data) 
- (Point-x line-start) 
- (Point-y line-start) 
- (Point-x line-end) 
- (Point-y line-end) 
- "red")))
+;(define render-graph (flip-vertical
+(define render-graph 
+  (add-line 
+   (embed-engine final-data) 
+   (Point-x line-start) 
+   (Point-y line-start) 
+   (Point-x line-end) 
+   (Point-y line-end) 
+   "red"))
+;)
 
 (define equation (string-append 
- "y = " 
- (number->string Alpha) 
- " + " 
- (number->string Beta) 
- "x"))
+                  "y = " 
+                  (number->string Alpha) 
+                  " + " 
+                  (number->string Beta) 
+                  "x"))
 
-render-graph
+(define (mirror-vertical P)
+  (make-Point 
+   (* (Point-x P) scaling-x) 
+   (- (* (Point-y P) scaling-y) (- plot-frame-height (* (- plot-frame-height (* (Point-y P) scaling-y)) 2)
+                                   ))))
+
+(define (crop-graph given-img) 
+  (flip-vertical (crop 
+                  (- (*(apply min X-vec) scaling-x) inc) 
+                  (- (* (apply min Y-vec) scaling-y) inc)
+                  (+ (- (*(apply max Y-vec) scaling-y) (*(apply min Y-vec) scaling-y)) (* inc 2))
+                  (+ (- (*(apply max X-vec) scaling-x) (*(apply min X-vec) scaling-x)) (* inc 2))
+                  given-img)))
+
+
+(crop-graph render-graph)
 (display newline)
 (string-append "Sample Size: " (number->string N))
 (string-append "Mean x: " (number->string X-mean))
